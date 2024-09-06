@@ -1,0 +1,161 @@
+{
+    "opcode_range": [3, 0],
+    "insn_signals": {
+        "mode": {
+            "type":    "encoder",
+            "range":   [6, 4],
+            "enum": {
+                "SHR": 0,
+                "SHL": 1,
+                "ADD": 2,
+                "SUB": 3,
+                "XOR": 4,
+                "AND": 5,
+                "OR":  6,
+                "B":   7,
+                
+                "BCS": 0,
+                "BEQ": 1,
+                "BGT": 2,
+                "BLT": 3,
+                "BCC": 4,
+                "BNE": 5,
+                "BLE": 6,
+                "BGE": 7
+            }
+        }
+    },
+    "ucode_signals": {
+        "dest": {
+            "type":    "encoder",
+            "range":   [2, 0],
+            "enum": {
+                "A":   1,
+                "B":   2,
+                "J":   3,
+                "CJ":  4,
+                "AR":  5,
+                "MEM": 6,
+                "IR":  7
+            }
+        },
+        "src": {
+            "type":    "encoder",
+            "range":   [4, 3],
+            "enum": {
+                "MEM": 1,
+                "ALU": 2,
+                "A":   3
+            }
+        },
+        "pc_inc": {
+            "type":    "flag",
+            "bit":     7
+        }
+    },
+    "ucode": {
+        "rom_alen":    6,
+        "rom_dlen":    8,
+        "prefix":      [],
+        "suffix":      [{"pc_inc": true, "src": "MEM", "dest": "IR"}],
+        "opcode_addr": [5, 2],
+        "cycle_addr":  [1, 0]
+    },
+    "opcodes": {
+        "0": {
+            "ucode": [],
+            "variants": {
+                "nop": {"insn": {}, "desc":  "Does nothing"}
+            }
+        },
+        "1": {
+            "ucode": [
+                {"src": "ALU", "dest": "A"}
+            ],
+            "variants": {
+                "shr": {"insn":  {"mode": "SHR"}, "desc":  "Bitwise-shift right accumulator"},
+                "shl": {"insn":  {"mode": "SHL"}, "desc":  "Bitwise-shift left accumulator"}
+            }
+        },
+        "2": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "B"},
+                {"src": "ALU", "dest": "A"}
+            ],
+            "variants": {
+                "add 1": {"insn":  {"mode": "ADD"}, "desc":  "Add immediate value to accumulator"},
+                "sub 1": {"insn":  {"mode": "SUB"}, "desc":  "Subtract immediate value from accumulator"},
+                "xor 1": {"insn":  {"mode": "XOR"}, "desc":  "Bitwise-XOR immediate value and accumulator"},
+                "and 1": {"insn":  {"mode": "AND"}, "desc":  "Bitwise-AND immediate value and accumulator"},
+                "or 1":  {"insn":  {"mode": "OR"},  "desc":  "Bitwise-OR immediate value and accumulator"},
+                "li 1":  {"insn":  {"mode": "B"},   "desc":  "Load immediate value into accumulator"}
+            }
+        },
+        "3": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "AR"},
+                {"src": "MEM", "dest": "B"},
+                {"src": "ALU", "dest": "A"}
+            ],
+            "variants": {
+                "add [1]": {"insn":  {"mode": "ADD"}, "desc":  "Add memory byte to accumulator"},
+                "sub [1]": {"insn":  {"mode": "SUB"}, "desc":  "Subtract memory byte from accumulator"},
+                "xor [1]": {"insn":  {"mode": "XOR"}, "desc":  "Bitwise-XOR memory byte and accumulator"},
+                "and [1]": {"insn":  {"mode": "AND"}, "desc":  "Bitwise-AND memory byte and accumulator"},
+                "or [1]":  {"insn":  {"mode": "OR"},  "desc":  "Bitwise-OR memory byte and accumulator"},
+                "lb [1]":  {"insn":  {"mode": "B"},   "desc":  "Load accumulator from memory"}
+            }
+        },
+        "4": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "B"},
+                {"src": "ALU"}
+            ],
+            "variants": {
+                "cmp 1": {"insn":  {"mode": "SUB"}, "desc":  "Compare accumulator to immediate value"}
+            }
+        },
+        "5": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "AR"},
+                {"src": "MEM", "dest": "B"},
+                {"src": "ALU"}
+            ],
+            "variants": {
+                "cmp [1]": {"insn":  {"mode": "SUB"}, "desc":  "Compare accumulator to memory byte"}
+            }
+        },
+        "6": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "AR"},
+                {"src": "A", "dest": "MEM"}
+            ],
+            "variants": {
+                "sb [1]": {"insn": {}, "desc": "Store accumulator to memory"}
+            }
+        },
+        "7": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "J"}
+            ],
+            "variants": {
+                "j 1": {"insn": {}, "desc": "Jump to address"}
+            }
+        },
+        "8": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "CJ"}
+            ],
+            "variants": {
+                "bcs 1": {"insn": {"mode": "BCS"}, "desc": "Jump to address if carry flag set"},
+                "beq 1": {"insn": {"mode": "BEQ"}, "desc": "Jump to address if zero flag set"},
+                "bgt 1": {"insn": {"mode": "BGT"}, "desc": "Jump to address if greater than"},
+                "blt 1": {"insn": {"mode": "BLT"}, "desc": "Jump to address if less than"},
+                "bcc 1": {"insn": {"mode": "BCC"}, "desc": "Jump to address if carry flag clear"},
+                "bne 1": {"insn": {"mode": "BNE"}, "desc": "Jump to address if zero flag clear"},
+                "ble 1": {"insn": {"mode": "BLE"}, "desc": "Jump to address if less or equal"},
+                "bge 1": {"insn": {"mode": "BGE"}, "desc": "Jump to address if greater or equal"}
+            }
+        }
+    }
+}
