@@ -10,21 +10,23 @@ def tokenize(raw: str) -> list[Token]:
     long = ['<<', '>>', '<=', '>=', '==', '!=', '&&', '||']
     while raw:
         # Labels and keywords.
-        if is_sym_char(raw[0], False):
+        if is_sym_char(raw[0], True):
             tmp, raw = raw[0], raw[1:]
-            while is_sym_char(raw[0]):
+            while raw and is_sym_char(raw[0]):
                 tmp, raw = tmp+raw[0], raw[1:]
             if tmp[0] in '0123456789':
                 ls.append(int(tmp, 0))
             else:
                 ls.append(tmp)
         # Operators composed of two symbols.
-        elif len(raw) >= 2 and raw[0:1] in long:
+        elif len(raw[0]) >= 2 and raw[0:1] in long:
             ls.append(raw[0:1])
             raw = raw[2:]
         # Other symbols.
-        elif ord(raw) > 0x20:
+        elif ord(raw[0]) > 0x20:
             ls.append(raw[0])
+            raw = raw[1:]
+        else:
             raw = raw[1:]
     return ls
 
