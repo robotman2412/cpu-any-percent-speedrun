@@ -1,26 +1,31 @@
 
 type Sigval  = dict[str,str|bool]
 type Argspec = int
+type Token = str|int
 
 
 
-def tokenize(raw: str) -> list[str|int]:
-    cur = None
-    ls  = []
-    for char in raw:
-        if cur and not is_sym_char(char):
-            if cur.lower()[0] in '0123456789':
-                ls.append(int(cur, 0))
+def tokenize(raw: str) -> list[Token]:
+    ls   = []
+    long = ['<<', '>>', '<=', '>=', '==', '!=', '&&', '||']
+    while raw:
+        # Labels and keywords.
+        if is_sym_char(raw[0], False):
+            tmp, raw = raw[0], raw[1:]
+            while is_sym_char(raw[0]):
+                tmp, raw = tmp+raw[0], raw[1:]
+            if tmp[0] in '0123456789':
+                ls.append(int(tmp, 0))
             else:
-                ls.append(cur)
-            cur = None
-            ls.append(char)
-        elif is_sym_char(char):
-            cur = char
-        elif ord(char) > 0x20:
-            ls.append(char)
-    if cur:
-        ls.append(cur)
+                ls.append(tmp)
+        # Operators composed of two symbols.
+        elif len(raw) >= 2 and raw[0:1] in long:
+            ls.append(raw[0:1])
+            raw = raw[2:]
+        # Other symbols.
+        elif ord(raw) > 0x20:
+            ls.append(raw[0])
+            raw = raw[1:]
     return ls
 
 
@@ -32,6 +37,13 @@ def is_sym_char(char: str, allow_numeric = True) -> bool:
         return True
     else:
         return char in ['.', '_', '$']
+
+
+def is_sym_str(sym: str) -> bool:
+    if not is_sym_char(sym[0], False): return False
+    for char in sym[1:]:
+        if not is_sym_char(char): return False
+    return True
 
 
 def insert_val(val: int, pos: tuple[int,int], insert: int) -> int:
