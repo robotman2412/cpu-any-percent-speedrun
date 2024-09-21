@@ -33,7 +33,7 @@ def tokenize(raw: str) -> list[Token]:
 
 def is_sym_char(char: str, allow_numeric = True) -> bool:
     n = ord(char)
-    if ord('a') <= n <= ord('z'):
+    if ord('a') <= n <= ord('z') or ord('A') <= n <= ord('Z'):
         return True
     elif allow_numeric and ord('0') <= n <= ord('9'):
         return True
@@ -81,6 +81,7 @@ class Insn:
         self.format: list[str|Argspec] = []
         self.sigval: Sigval            = {}
         self.desc:   str               = None
+        self.code:   list[int]         = None
     
     @staticmethod
     def parse(format: str, data: dict):
@@ -140,6 +141,7 @@ class ISA:
         self.opcodes:       dict[int,Opcode] = {}
         self.opcode_range:  tuple[int,int]   = (0, 0)
         self.ucode_rom:     UcodeRom         = None
+        self.byte_size:     int              = 8
     
     @staticmethod
     def parse(data: dict):
@@ -149,6 +151,21 @@ class ISA:
         isa.opcodes       = {int(k, 0): Opcode.parse(int(k, 0), data['opcodes'][k]) for k in data['opcodes']}
         isa.opcode_range  = tuple(data['opcode_range'])
         isa.ucode_rom     = UcodeRom.parse(data['ucode'])
+        if "byte_size" in data:
+            isa.byte_size = data["byte_size"]
+        for opcode in isa.opcodes.values():
+            base = insert_val(0, isa.opcode_range, opcode.id)
+            for fmt in opcode.variants:
+                idat = base
+                for k, v in opcode.variants[fmt].sigval.items():
+                    if isa.insn_signals[k].type == "flag":
+                        val = int(v)
+                    elif isa.insn_signals[k].type == "encoder":
+                        val = isa.insn_signals[k].enum[v]
+                    else:
+                        raise ValueError(F"Unknown signal type {isa.insn_signals[k].type}")
+                    idat = insert_val(idat, isa.insn_signals[k].range, val)
+                opcode.variants[fmt].code = [idat]
         return isa
     
     @staticmethod

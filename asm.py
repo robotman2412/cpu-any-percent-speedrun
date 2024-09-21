@@ -10,6 +10,12 @@ def write_lhf(fd, data: list[int]):
         fd.write(f"{x:x} ")
     fd.flush()
 
+def write_bin(fd, data: list[int], dlen: int):
+    byte_count = (dlen + 7) // 8
+    for word in data:
+        for i in range(byte_count):
+            fd.write((word >> (i*8)) & 255)
+
 
 class AsmError(Exception):
     def __init__(self, msg: str, line: int = None):
@@ -17,7 +23,7 @@ class AsmError(Exception):
         self.line = line
 
 
-class Relocation:
+class SymRef:
     def __init__(self, offset=0, symbol=None):
         self.offset = offset
         self.symbol = symbol
@@ -27,12 +33,12 @@ class Relocation:
             raise AsmError("Expected constant, got symbol reference")
     
     def __repr__(self):
-        return f"Relocation({self.offset}, {repr(self.symbol)})"
+        return f"SymRef({self.offset}, {repr(self.symbol)})"
     
     def __str__(self):
         return f"{self.symbol} + {self.offset}" if self.symbol else f"{self.offset}"
 
-def parse_expr(args: list[Token|Relocation], equ: dict[str,int] = {}) -> Relocation:
+def parse_expr(args: list[Token|SymRef], equ: dict[str,int] = {}) -> SymRef:
     args = args.copy()
     # Define operators.
     unary = {
@@ -79,14 +85,14 @@ def parse_expr(args: list[Token|Relocation], equ: dict[str,int] = {}) -> Relocat
     
     # Pass 0: Convert stuff to Relocation.
     for i in range(len(args)):
-        if type(args[i]) == Relocation:
+        if type(args[i]) == SymRef:
             pass
         elif args[i] in equ:
-            args[i] = Relocation(equ[args[i]])
+            args[i] = SymRef(equ[args[i]])
         elif type(args[i]) == int:
-            args[i] = Relocation(args[i])
+            args[i] = SymRef(args[i])
         elif is_sym_str(args[i]):
-            args[i] = Relocation(0, args[i])
+            args[i] = SymRef(0, args[i])
         elif args[i] not in valid_op and args[i] not in '()':
             raise AsmError(f"`{args[i]}` not expected here")
     
@@ -114,7 +120,7 @@ def parse_expr(args: list[Token|Relocation], equ: dict[str,int] = {}) -> Relocat
     while i > 0:
         if type(args[i]) != str and args[i-1] in unary and (i == 1 or type(args[i-2]) == str):
             if args[i-1] != '+': args[i].assert_const()
-            args = args[:i-1] + [Relocation(unary[args[i-1]](args[i].offset))] + args[i+1:]
+            args = args[:i-1] + [SymRef(unary[args[i-1]](args[i].offset))] + args[i+1:]
         i -= 1
     
     # Pass 3: Binary operators.
@@ -135,20 +141,13 @@ def parse_expr(args: list[Token|Relocation], equ: dict[str,int] = {}) -> Relocat
                 if args[i].symbol and args[i+2].symbol:
                     raise AsmError("Can't add twp symbols to each other")
                 symbol = args[i].symbol or args[i+2].symbol
-                args = args[:i] + [Relocation(oper[args[i+1]](args[i].offset, args[i+2].offset), symbol)] + args[i+3:]
+                args = args[:i] + [SymRef(oper[args[i+1]](args[i].offset, args[i+2].offset), symbol)] + args[i+3:]
             else:
                 i += 2
     
-    if type(args[0]) != Relocation:
+    if type(args[0]) != SymRef:
         raise AsmError(f"`{args[0]}` not expected here")
     return args[0]
-
-def handle_label(label: str):
-    global labels, addr
-    if label in labels:
-        print(f"Error: redefinition of {label}")
-        exit(1)
-    labels[label] = addr
 
 
 def an(s):
@@ -185,26 +184,109 @@ def listexplabel(list, index):
         raise AsmError("Expected label")
 
 
-def assemble(infd, isa: ISA) -> list[int]:
-    labels: dict[str,Relocation] = {}
-    equ:    dict[str,int]        = {}
-    reloc:  list[tuple[str,int]] = []
-    out:    list[int]            = []
+
+def assemble(infd, isa: ISA) -> tuple[list[int], dict[int, int], dict[str,int]]:
+    symbols: dict[str,int]           = {}
+    equ:     dict[str,int]           = {}
+    reloc:   list[tuple[int,SymRef]] = []
+    out:     list[int]               = []
+    a2l:     dict[int, int]          = {}
     addr = 0
     
-    def handle_directive(directive: str, args: list[str]):
-        nonlocal equ, labels, addr
+    
+    def write_byte(value: int):
+        nonlocal out, addr, a2l, i
+        a2l[addr] = i + 1
+        out.append(value)
+        addr += 1
+    
+    def write_symref(ref: SymRef):
+        nonlocal out, reloc, addr, a2l, i
+        a2l[addr] = i + 1
+        reloc.append((addr, ref))
+        out.append(0)
+        addr += 1
+    
+    def handle_label(label: str):
+        nonlocal symbols, equ, addr
+        if label in equ:
+            raise AsmError(f"Label redefines equation `{label}`")
+        if label in symbols:
+            raise AsmError(f"Redefinition of {label}")
+        symbols[label] = addr
+    
+    def handle_directive(directive: str, args: list[Token]):
+        nonlocal equ, symbols, addr
         if directive == 'equ':
             listexplabel(args, 0)
             listexpect(args, 1, ',')
             if len(args) < 3: raise AsmError("Expected an expression")
-            if args[0] in labels: raise AsmError(f"Redefinition of `{args[0]}`")
+            if args[0] in symbols: raise AsmError(f"Equation redefines label `{args[0]}`")
             expr = parse_expr(args[2:], equ)
-            if expr.symbol: labels[args[0]] = expr
-            else:           equ[args[0]]    = expr.offset
+            expr.assert_const()
+            equ[args[0]] = expr.offset
+            
         elif directive == 'org':
-            pass
+            if len(args) < 1: raise AsmError("Expected an expression")
+            expr = parse_expr(args[1:], equ)
+            expr.assert_const()
+            if expr.offset < addr: raise AsmError(f".{directive} directive goes backwards")
+            addr = expr.offset
+            
+        elif directive == 'byte':
+            if len(args) < 1: raise AsmError("Expected an expression")
+            while args:
+                if ',' in args:
+                    comma = args.index(',')
+                    expr, args = parse_expr(args[:comma]), args[comma+1:]
+                else:
+                    expr, args = parse_expr(args), []
+                write_symref(expr)
+            
+        else:
+            raise AsmError(f"Uknown directive `{directive}`")
     
+    def match_insn(args: list[Token], opcode: Opcode, insn: Insn) -> bool:
+        nonlocal equ, isa
+        
+        # Parse and match instruction.
+        args = args.copy()
+        idef = insn.format.copy()
+        refs = []
+        while args or idef:
+            if not (args and idef):
+                return False
+            elif type(idef[0]) == int:
+                end  = args.index(idef[1]) if len(idef) > 1 and idef[1] in args else len(args)
+                for x in args[:end]:
+                    if x in [',', '[', ']']:
+                        return False
+                refs.append(parse_expr(args[:end], equ))
+                args = args[end+1:]
+                idef = idef[2:]
+            elif args[0].lower() == idef[0].lower():
+                args = args[1:]
+                idef = idef[1:]
+            else:
+                return False
+        
+        # Write opcode and refs.
+        for idat in insn.code:
+            write_byte(idat)
+        for ref in refs:
+            write_symref(ref)
+        
+        return True
+    
+    def handle_insn(args: list[Token]):
+        nonlocal isa
+        for opcode in isa.opcodes.values():
+            for insn in opcode.variants.values():
+                if match_insn(args, opcode, insn): return
+        raise AsmError("Unknown instruction")
+    
+    
+    # Pass 1: Write data and reloc entries, find labels.
     lines: list[str] = infd.readlines()
     for i in range(len(lines)):
         tokens = tokenize(lines[i])
@@ -215,15 +297,30 @@ def assemble(infd, isa: ISA) -> list[int]:
             if len(tokens) == 0: continue
             if tokens[0][0] == '.':
                 handle_directive(tokens[0][1:], tokens[1:])
+            else:
+                handle_insn(tokens)
         except AsmError as e:
             raise AsmError(*e.args, i+1)
+    
+    # Pass 2: Apply relocations.
+    for reladdr, symref in reloc:
+        if symref.symbol:
+            if symref.symbol not in symbols:
+                raise AsmError
+            out[reladdr] = symbols[symref.symbol] + symref.offset
+        else:
+            out[reladdr] = symref.offset
+    
+    return out, a2l, symbols
+
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Assembler for the Stovepipe CPU")
-    parser.add_argument("--isa",  action="store", default="isa.json")
-    parser.add_argument("-o",     action="store", default="out.bin")
-    parser.add_argument("infile", action="store")
+    parser.add_argument("--isa",           action="store", default="isa.json")
+    parser.add_argument("-o", "--outfile", action="store", default="out.lhf")
+    parser.add_argument("--format",        action="store", choices=["binary", "bin", "logisim", "lhf"], default="logisim")
+    parser.add_argument("infile",          action="store")
     args = parser.parse_args()
     
     with open(args.isa, "r") as fd:
@@ -231,7 +328,21 @@ if __name__ == "__main__":
     
     with open(args.infile, "r") as fd:
         try:
-            out = assemble(fd, spec)
+            out, a2l, symbols = assemble(fd, spec)
         except AsmError as e:
             print(f"{args.infile}:{e.line}: {e.args[0]}")
             exit(1)
+    
+    if args.format in ["lhf", "logisim"]:
+        with open(args.outfile, "w") as fd:
+            write_lhf(fd, out)
+    else:
+        with open(args.outfile, "wb") as fd:
+            write_bin(fd, out, spec.byte_size)
+    
+    if len(symbols):
+        print("Symbols:")
+        for symname in symbols:
+            print(f"  {symname:10} = 0x{symbols[symname]:x}")
+    else:
+        print("No symbols defined")

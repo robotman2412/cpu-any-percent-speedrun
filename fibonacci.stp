@@ -1,0 +1,22 @@
+
+    .equ z, 0xff
+
+init:
+    li  1
+    sb  [y]
+    li  0
+    sb  [x]
+    sb  [z]
+loop:
+    lb  [x]
+    add [y]
+    bcs init
+    sb  [z]
+    lb  [x]
+    sb  [y]
+    lb  [z]
+    sb  [x]
+    j   loop
+
+x:  .byte 0
+y:  .byte 0

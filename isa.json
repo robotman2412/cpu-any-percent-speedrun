@@ -1,4 +1,5 @@
 {
+    "byte_size": 8,
     "opcode_range": [3, 0],
     "insn_signals": {
         "mode": {
