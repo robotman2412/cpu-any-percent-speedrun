@@ -25,11 +25,12 @@ parser.add_argument("--word-size",     help="Override ISA's microcode ROM size",
 args = parser.parse_args()
 
 with open(args.infile, "r") as infd:
-    with open(args.outfile, "wb") as outfd:
-        data = json.load(infd)
-        spec = ISA.parse(data)
-        rom  = spec.gen_ucode_rom(data)
-        if args.type == "logisim":
+    data = json.load(infd)
+    spec = ISA.parse(data)
+    rom  = spec.gen_ucode_rom()
+    if args.type == "logisim":
+        with open(args.outfile, "w") as outfd:
             write_lhf(outfd, rom)
-        elif args.type == "binary":
+    elif args.type == "binary":
+        with open(args.outfile, "wb") as outfd:
             write_bin(outfd, rom, args.word_size or spec.ucode_rom.dlen)

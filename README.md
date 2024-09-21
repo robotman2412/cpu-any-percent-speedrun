@@ -30,32 +30,35 @@ Stovepipe is an 8-bit von Neumann CPU with an 8-bit accumulator and an 8-bit dat
 
 ## Instruction-set specification
 ### Overview
-| Format      | Description
-| :---------- | :----------
-| `nop`       | Does nothing
-| `shr`       | Arithmetic shift right
-| `shl`       | Arithmetic shift left
-| `add imm`   | Add immediate value to accumulator
-| `sub imm`   | Subtract immediate value from accumulator
-| `xor imm`   | Bitwise-XOR immediate value and accumulator
-| `and imm`   | Bitwise-AND immediate value and accumulator
-| `or  imm`   | Bitwise-OR immediate value and accumulator
-| `li  imm`   | Load immediate value into accumulator
-| `add [mem]` | Add memory byte to accumulator
-| `sub [mem]` | Subtract memory byte from accumulator
-| `xor [mem]` | Bitwise-XOR memory byte and accumulator
-| `and [mem]` | Bitwise-AND memory byte and accumulator
-| `or  [mem]` | Bitwise-OR memory byte and accumulator
-| `lb  [mem]` | Load accumulator from memory
-| `cmp imm`   | Compare accumulator to immediate value
-| `cmp [mem]` | Compare accumulator to memory byte
-| `sb  [mem]` | Store accumulator to memory
-| `j   addr`  | Jump to address
-| `bcs addr`  | Jump to address if carry flag set
-| `beq addr`  | Jump to address if zero flag set
-| `bgt addr`  | Jump to address if greater than
-| `blt addr`  | Jump to address if less than
-| `bcc addr`  | Jump to address if carry flag clear
-| `bne addr`  | Jump to address if zero flag clear
-| `ble addr`  | Jump to address if less or equal
-| `bge addr`  | Jump to address if greater or equal
+| Format         | Description
+| :------------- | :----------
+| `nop`          | Does nothing
+| `shr`          | Arithmetic shift right
+| `shl`          | Arithmetic shift left
+| `add imm`      | Add immediate value to accumulator
+| `sub imm`      | Subtract immediate value from accumulator
+| `xor imm`      | Bitwise-XOR immediate value and accumulator
+| `and imm`      | Bitwise-AND immediate value and accumulator
+| `or  imm`      | Bitwise-OR immediate value and accumulator
+| `li  imm`      | Load immediate value into accumulator
+| `add [mem]`    | Add memory byte to accumulator
+| `sub [mem]`    | Subtract memory byte from accumulator
+| `xor [mem]`    | Bitwise-XOR memory byte and accumulator
+| `and [mem]`    | Bitwise-AND memory byte and accumulator
+| `or  [mem]`    | Bitwise-OR memory byte and accumulator
+| `lb  [mem]`    | Load accumulator from memory
+| `cmp imm`      | Compare accumulator to immediate value
+| `cmp [mem]`    | Compare accumulator to memory byte
+| `sb  [mem]`    | Store accumulator to memory
+| `j   addr`     | Jump to address
+| `bcs addr`     | Jump to address if carry flag set
+| `beq addr`     | Jump to address if zero flag set
+| `bgt addr`     | Jump to address if greater than
+| `blt addr`     | Jump to address if less than
+| `bcc addr`     | Jump to address if carry flag clear
+| `bne addr`     | Jump to address if zero flag clear
+| `ble addr`     | Jump to address if less or equal
+| `bge addr`     | Jump to address if greater or equal
+| `shr.lb [mem]` | Bitwise-shift right memory then load into accumulator
+| `shl.lb [mem]` | Bitwise-shift left memory then load into accumulator
+| `jr`           | Jump to address in accumulator

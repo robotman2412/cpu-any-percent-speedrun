@@ -1,0 +1,31 @@
+
+    .equ mul_out, 0xff
+
+
+
+    li      11
+    sb      [mul_lhs]
+    li      13
+    sb      [mul_rhs]
+    li      0
+    sb      [mul_out]
+
+mul:
+    shr.lb  [mul_rhs]
+    bcc     mul.no_add
+    lb      [mul_out]
+    add     [mul_lhs]
+    sb      [mul_out]
+mul.no_add:
+    shl.lb  [mul_lhs]
+    bne     mul
+
+hlt:
+    j       hlt
+
+
+
+mul_lhs:
+    .byte 0
+mul_rhs:
+    .byte 0

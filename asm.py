@@ -184,7 +184,6 @@ def listexplabel(list, index):
         raise AsmError("Expected label")
 
 
-
 def assemble(infd, isa: ISA) -> tuple[list[int], dict[int, int], dict[str,int]]:
     symbols: dict[str,int]           = {}
     equ:     dict[str,int]           = {}
@@ -314,12 +313,11 @@ def assemble(infd, isa: ISA) -> tuple[list[int], dict[int, int], dict[str,int]]:
     return out, a2l, symbols
 
 
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Assembler for the Stovepipe CPU")
     parser.add_argument("--isa",           action="store", default="isa.json")
     parser.add_argument("-o", "--outfile", action="store", default="out.lhf")
-    parser.add_argument("--format",        action="store", choices=["binary", "bin", "logisim", "lhf"], default="logisim")
+    parser.add_argument("--format",        action="store", choices=["binary", "logisim"], default="logisim")
     parser.add_argument("infile",          action="store")
     args = parser.parse_args()
     
@@ -333,7 +331,7 @@ if __name__ == "__main__":
             print(f"{args.infile}:{e.line}: {e.args[0]}")
             exit(1)
     
-    if args.format in ["lhf", "logisim"]:
+    if args.format == "logisim":
         with open(args.outfile, "w") as fd:
             write_lhf(fd, out)
     else:

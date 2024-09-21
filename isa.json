@@ -55,12 +55,12 @@
         }
     },
     "ucode": {
-        "rom_alen":    6,
+        "rom_alen":    7,
         "rom_dlen":    8,
         "prefix":      [],
         "suffix":      [{"pc_inc": true, "src": "MEM", "dest": "IR"}],
-        "opcode_addr": [5, 2],
-        "cycle_addr":  [1, 0]
+        "opcode_addr": [6, 3],
+        "cycle_addr":  [2, 0]
     },
     "opcodes": {
         "0": {
@@ -156,6 +156,26 @@
                 "bne 1": {"insn": {"mode": "BNE"}, "desc": "Jump to address if zero flag clear"},
                 "ble 1": {"insn": {"mode": "BLE"}, "desc": "Jump to address if less or equal"},
                 "bge 1": {"insn": {"mode": "BGE"}, "desc": "Jump to address if greater or equal"}
+            }
+        },
+        "9": {
+            "ucode": [
+                {"pc_inc": true, "src": "MEM", "dest": "AR"},
+                {"src": "MEM", "dest": "A"},
+                {"src": "ALU", "dest": "A"},
+                {"src": "A", "dest": "MEM"}
+            ],
+            "variants": {
+                "shr.lb [1]": {"insn":  {"mode": "SHR"}, "desc": "Bitwise-shift right memory then load into accumulator"},
+                "shl.lb [1]": {"insn":  {"mode": "SHL"}, "desc": "Bitwise-shift left memory then load into accumulator"}
+            }
+        },
+        "10": {
+            "ucode": [
+                {"src": "A", "dest": "J"}
+            ],
+            "variants": {
+                "jr": {"insn": {}, "desc": "Jump to address in accumulator"}
             }
         }
     }
