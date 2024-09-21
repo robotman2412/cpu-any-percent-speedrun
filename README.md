@@ -3,8 +3,14 @@
 
 Imma call this one "Stovepipe"
 
-This is a one-night "CPU" "speedrun" where I go at very high speeds to make CPU...
+This was a one-night "CPU" "speedrun" where I go at very high speeds to make CPU... It took me a total of merely 4 hours to design the hardware!
 
+
+# How to play with stovepipe
+1. Use logisim (the original version) to open `stovepipe.circ`
+2. Use the `asm.py` python script to assemble programs (e.g. `fibonacci.stp`)
+3. Load the output file (e.g. `out.lhf`) into the RAM in logisim
+4. Start the clock and see the magic happening
 
 
 # Architecture overview
