@@ -55,12 +55,12 @@
         }
     },
     "ucode": {
-        "rom_alen":    7,
+        "rom_alen":    6,
         "rom_dlen":    8,
         "prefix":      [],
         "suffix":      [{"pc_inc": true, "src": "MEM", "dest": "IR"}],
-        "opcode_addr": [6, 3],
-        "cycle_addr":  [2, 0]
+        "opcode_addr": [5, 2],
+        "cycle_addr":  [1, 0]
     },
     "opcodes": {
         "0": {
@@ -162,12 +162,11 @@
             "ucode": [
                 {"pc_inc": true, "src": "MEM", "dest": "AR"},
                 {"src": "MEM", "dest": "A"},
-                {"src": "ALU", "dest": "A"},
-                {"src": "A", "dest": "MEM"}
+                {"src": "ALU", "dest": "A"}
             ],
             "variants": {
-                "shr.lb [1]": {"insn":  {"mode": "SHR"}, "desc": "Bitwise-shift right memory then load into accumulator"},
-                "shl.lb [1]": {"insn":  {"mode": "SHL"}, "desc": "Bitwise-shift left memory then load into accumulator"}
+                "lb.shr [1]": {"insn":  {"mode": "SHR"}, "desc": "Bitwise-shift right memory then load into accumulator"},
+                "lb.shl [1]": {"insn":  {"mode": "SHL"}, "desc": "Bitwise-shift left memory then load into accumulator"}
             }
         },
         "10": {

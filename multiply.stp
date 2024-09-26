@@ -11,13 +11,15 @@
     sb      [mul_out]
 
 mul:
-    shr.lb  [mul_rhs]
+    lb.shr  [mul_rhs]
+    sb      [mul_rhs]
     bcc     mul.no_add
     lb      [mul_out]
     add     [mul_lhs]
     sb      [mul_out]
 mul.no_add:
-    shl.lb  [mul_lhs]
+    lb.shl  [mul_lhs]
+    sb      [mul_lhs]
     bne     mul
 
 hlt:
